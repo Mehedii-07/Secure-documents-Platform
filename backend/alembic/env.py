@@ -27,8 +27,8 @@ from app.core.database import Base  # noqa: E402
 
 # Import ALL models here so Alembic's autogenerate can detect them.
 # Add new model imports as you create them in future issues:
+from app.models import User                          # Issue #2
 #
-# from app.models.user import User                   # Issue #2
 # from app.models.document import Document           # Issue #10
 # from app.models.compliance import ComplianceCheck  # Issue #24
 
