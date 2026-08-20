@@ -1,0 +1,146 @@
+version: "3.9"
+
+# ============================================================
+# AI-Powered Secure Document & Compliance Platform
+# Docker Compose — all services, all envs
+# ============================================================
+
+services:
+
+  # ----------------------------------------------------------
+  # PostgreSQL 16 with pgvector extension
+  # ----------------------------------------------------------
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: compliance_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-compliance_platform}
+      POSTGRES_USER: ${POSTGRES_USER:-platform_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-platform_user} -d ${POSTGRES_DB:-compliance_platform}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - platform_net
+
+  # ----------------------------------------------------------
+  # Redis — Celery broker + result backend
+  # ----------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: compliance_redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      ${REDIS_PASSWORD:+--requirepass ${REDIS_PASSWORD}}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - platform_net
+
+  # ----------------------------------------------------------
+  # FastAPI Backend
+  # ----------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: compliance_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Override host/port references to use docker network names
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - document_storage:/app/storage/local
+    networks:
+      - platform_net
+
+  # ----------------------------------------------------------
+  # Celery Worker — background document processing
+  # ----------------------------------------------------------
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: compliance_celery_worker
+    restart: unless-stopped
+    command: >
+      celery -A app.workers.celery_app worker
+      --loglevel=info
+      --concurrency=2
+      -Q default,documents,ai
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - document_storage:/app/storage/local
+    networks:
+      - platform_net
+
+  # ----------------------------------------------------------
+  # React Frontend (served by Nginx in production image)
+  # ----------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: compliance_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - platform_net
+
+# ============================================================
+# Volumes
+# ============================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  document_storage:
+    driver: local
+
+# ============================================================
+# Networks
+# ============================================================
+networks:
+  platform_net:
+    driver: bridge

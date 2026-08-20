@@ -1,0 +1,70 @@
+# docker-compose.override.yml
+# ============================================================
+# Development-only overrides.
+# Docker Compose automatically merges this with docker-compose.yml
+# when running `docker-compose up` locally.
+# Do NOT commit secrets here.
+# ============================================================
+
+version: "3.9"
+
+services:
+
+  backend:
+    build:
+      target: runtime        # Use same target but with dev packages
+    command: >
+      uvicorn app.main:app
+      --host 0.0.0.0
+      --port 8000
+      --reload
+      --log-level debug
+    volumes:
+      # Live-reload: mount source code into container
+      - ./backend/app:/app/app:ro
+      - ./backend/tests:/app/tests:ro
+      - document_storage:/app/storage/local
+    environment:
+      DEBUG: "true"
+      APP_ENV: development
+
+  celery_worker:
+    command: >
+      celery -A app.workers.celery_app worker
+      --loglevel=debug
+      --concurrency=1
+      -Q default,documents,ai
+    volumes:
+      - ./backend/app:/app/app:ro
+      - document_storage:/app/storage/local
+
+  frontend:
+    # In development, override with the Vite dev server instead of Nginx
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000/api/v1
+
+  # ----------------------------------------------------------
+  # Celery Flower — task monitoring UI (dev only)
+  # ----------------------------------------------------------
+  flower:
+    image: mher/flower:2.0
+    container_name: compliance_flower
+    restart: unless-stopped
+    command: >
+      celery flower
+      --broker=redis://redis:6379/0
+      --port=5555
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+    networks:
+      - platform_net
