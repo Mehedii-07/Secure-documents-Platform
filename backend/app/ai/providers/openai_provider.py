@@ -46,7 +46,7 @@ class OpenAIProvider(AIProvider):
     - Document classification (via structured JSON prompt)
     """
 
-    def __init__(self, settings: "Settings") -> None:
+    def __init__(self, settings: Settings) -> None:
         if not settings.OPENAI_API_KEY:
             raise AIProviderError(
                 "OPENAI_API_KEY is not set. Add it to your .env file.",

@@ -20,6 +20,12 @@ include = ["app*"]
 [tool.ruff]
 target-version = "py311"
 line-length = 100
+exclude = [
+    ".venv",
+    "alembic/versions",
+]
+
+[tool.ruff.lint]
 extend-select = [
     "E",   # pycodestyle errors
     "W",   # pycodestyle warnings
@@ -36,15 +42,11 @@ ignore = [
     "B008",  # Allow function calls in argument defaults (FastAPI Depends)
     "B904",  # Allow raise without from in exception handlers
 ]
-exclude = [
-    ".venv",
-    "alembic/versions",
-]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S", "N"]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["app"]
 
 # ============================================================

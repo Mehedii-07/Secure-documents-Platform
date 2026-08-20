@@ -83,6 +83,11 @@ frontend/dist-ssr/
 frontend/.vite/
 *.local
 
+# TypeScript build artifacts (composite mode emits these)
+*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
+
 # ============================================================
 # Docker
 # ============================================================
