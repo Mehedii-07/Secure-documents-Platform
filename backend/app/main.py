@@ -37,7 +37,9 @@ async def lifespan(app: FastAPI):  # type: ignore[type-arg]
     Code before yield → startup.
     Code after yield → shutdown.
     """
-    logger.info("Starting %s v%s [env=%s]", settings.APP_NAME, settings.APP_VERSION, settings.APP_ENV)
+    logger.info(
+        "Starting %s v%s [env=%s]", settings.APP_NAME, settings.APP_VERSION, settings.APP_ENV
+    )
 
     # Verify database connectivity at startup (non-fatal — allows health check to report status)
     db_ok = await check_database_connection()

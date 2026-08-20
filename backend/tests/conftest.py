@@ -21,10 +21,10 @@ os.environ.setdefault("OPENAI_API_KEY", "sk-test-placeholder")
 os.environ.setdefault("APP_ENV", "testing")
 os.environ.setdefault("DEBUG", "false")
 
-import pytest  # noqa: E402
-from fastapi.testclient import TestClient  # noqa: E402
+import pytest
+from fastapi.testclient import TestClient
 
-from app.main import app  # noqa: E402
+from app.main import app
 
 
 @pytest.fixture(scope="session")

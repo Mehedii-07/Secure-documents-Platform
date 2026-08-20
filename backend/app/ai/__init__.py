@@ -43,7 +43,9 @@ def get_ai_provider() -> AIProvider:
         return AnthropicProvider(settings)
 
     if provider_name == "azure_openai":
-        from app.ai.providers.azure_openai_provider import AzureOpenAIProvider  # type: ignore[import]
+        from app.ai.providers.azure_openai_provider import (
+            AzureOpenAIProvider,  # type: ignore[import]
+        )
         return AzureOpenAIProvider(settings)
 
     if provider_name == "ollama":

@@ -53,11 +53,11 @@ class Base(DeclarativeBase):
 # ------------------------------------------------------------------ #
 # Lazy engine / session factory
 # ------------------------------------------------------------------ #
-_engine: "AsyncEngine | None" = None
+_engine: AsyncEngine | None = None
 _session_factory: async_sessionmaker[AsyncSession] | None = None
 
 
-def get_engine() -> "AsyncEngine":
+def get_engine() -> AsyncEngine:
     """Return the async engine, creating it on first call (lazy initialization)."""
     global _engine
     if _engine is None:
@@ -129,5 +129,5 @@ async def check_database_connection() -> bool:
         async with factory() as session:
             await session.execute(text("SELECT 1"))
         return True
-    except Exception:
+    except Exception:  # noqa: BLE001 — health check intentionally catches all errors
         return False

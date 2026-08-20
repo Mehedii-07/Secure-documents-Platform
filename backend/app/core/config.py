@@ -15,7 +15,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import AnyHttpUrl, Field, PostgresDsn, RedisDsn, computed_field, model_validator
+from pydantic import Field, computed_field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------ #
     # Backend API
     # ------------------------------------------------------------------ #
-    BACKEND_HOST: str = "0.0.0.0"
+    BACKEND_HOST: str = "0.0.0.0"  # noqa: S104 — intentional bind-all for Docker
     BACKEND_PORT: int = 8000
     API_V1_PREFIX: str = "/api/v1"
 
@@ -58,7 +58,7 @@ class Settings(BaseSettings):
 
     @computed_field  # type: ignore[misc]
     @property
-    def DATABASE_URL(self) -> str:
+    def DATABASE_URL(self) -> str:  # noqa: N802 — uppercase is pydantic-settings convention
         """Async SQLAlchemy connection string."""
         return (
             f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
@@ -67,7 +67,7 @@ class Settings(BaseSettings):
 
     @computed_field  # type: ignore[misc]
     @property
-    def DATABASE_URL_SYNC(self) -> str:
+    def DATABASE_URL_SYNC(self) -> str:  # noqa: N802
         """Sync connection string for Alembic migrations."""
         return (
             f"postgresql+psycopg2://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
@@ -84,7 +84,7 @@ class Settings(BaseSettings):
 
     @computed_field  # type: ignore[misc]
     @property
-    def REDIS_URL(self) -> str:
+    def REDIS_URL(self) -> str:  # noqa: N802
         if self.REDIS_PASSWORD:
             return f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
@@ -154,14 +154,14 @@ class Settings(BaseSettings):
 
     @computed_field  # type: ignore[misc]
     @property
-    def MAX_UPLOAD_SIZE_BYTES(self) -> int:
+    def MAX_UPLOAD_SIZE_BYTES(self) -> int:  # noqa: N802
         return self.MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
     # ------------------------------------------------------------------ #
     # Validators
     # ------------------------------------------------------------------ #
     @model_validator(mode="after")
-    def validate_ai_provider_credentials(self) -> "Settings":
+    def validate_ai_provider_credentials(self) -> Settings:
         """Warn (not error) if provider credentials are missing at startup."""
         # Credentials are validated lazily when the provider is first called,
         # not at import time, so we don't block startup in test environments.
