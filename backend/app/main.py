@@ -25,6 +25,11 @@ from app.core.config import get_settings
 from app.core.database import check_database_connection
 
 logger = logging.getLogger(__name__)
+
+# NOTE: get_settings() is called here at module level.
+# In production/Docker this is fine — env vars are set before the process starts.
+# In tests, conftest.py sets the required env vars BEFORE this module is imported.
+# Do NOT remove this — FastAPI decorators need settings at definition time.
 settings = get_settings()
 
 
@@ -67,8 +72,6 @@ app = FastAPI(
     docs_url=f"{settings.API_V1_PREFIX}/docs",
     redoc_url=f"{settings.API_V1_PREFIX}/redoc",
     lifespan=lifespan,
-    # Only expose Swagger UI in non-production environments
-    # In production, set DEBUG=false to disable docs
 )
 
 
@@ -112,11 +115,9 @@ async def health_check() -> dict[str, Any]:
 
     Returns:
         200 with status "ok" if the service is healthy.
-        200 with status "degraded" if some dependencies are unhealthy
-        (the service still responds but may have limited functionality).
+        200 with status "degraded" if some dependencies are unhealthy.
     """
     db_healthy = await check_database_connection()
-
     status = "ok" if db_healthy else "degraded"
 
     return {
